@@ -226,6 +226,35 @@ def run_fuzzy_tests(verbose: bool) -> tuple[int, int]:
     return n_pass, len(FUZZY_CASES)
 
 
+from loma_rag.llm.openai_client import make_chat_client  # noqa: E402
+from loma_rag.rag.quiz_intent import parse_answer_llm     # noqa: E402
+
+# (query, options, expected) — paraphrase / partial cases
+LLM_CASES: list[tuple[str, list[tuple[str, str]], str | None]] = [
+    ("the one about adverse selection", OPTS_EN, "A"),
+    ("transferring risk to another insurer", OPTS_EN, "C"),
+    ("a pool of similar risks shared together", OPTS_EN, "D"),
+    ("group coverage for employees", OPTS_VI, "C"),  # cross-language: model can still map
+    ("I don't know, what is this about?", OPTS_EN, None),
+    ("hint please", OPTS_EN, None),
+]
+
+
+def run_llm_tests(verbose: bool, client) -> tuple[int, int]:
+    if client is None:
+        print("parse_answer_llm: SKIPPED (--no-llm)")
+        return 0, 0
+    n_pass = 0
+    for query, options, expected in LLM_CASES:
+        actual = parse_answer_llm(client, "What is the question?", query, options)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] parse_answer_llm({query!r}, ...) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(LLM_CASES)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -256,6 +285,12 @@ def main() -> int:
     p, n = run_fuzzy_tests(args.verbose)
     total_pass += p; total_count += n
     print(f"parse_answer_fuzzy: {p}/{n}")
+
+    client = None if args.no_llm else make_chat_client()
+    p, n = run_llm_tests(args.verbose, client)
+    if n:
+        total_pass += p; total_count += n
+        print(f"parse_answer_llm: {p}/{n}")
 
     elapsed = time.time() - t0
     print(f"\n=== {total_pass}/{total_count} passed in {elapsed:.1f}s ===")

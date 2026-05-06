@@ -6,8 +6,14 @@ free so they can be unit-tested without the network.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
+
+from loma_rag.config.settings import azure
+from loma_rag.constant.thresholds import ANALYZE_CACHE_MAX
+from loma_rag.prompt.quiz_discussion import QUIZ_ANSWER_PARSER_SYSTEM
+from loma_rag.util.cache import LRUCache
 
 
 _WS_RE = re.compile(r"\s+")
@@ -251,4 +257,64 @@ def parse_answer_fuzzy(
     second = scored[1][0] if len(scored) > 1 else 0.0
     if best_score >= FUZZY_MIN_BEST and (best_score - second) >= FUZZY_MIN_GAP:
         return best_id
+    return None
+
+
+_answer_llm_cache = LRUCache(ANALYZE_CACHE_MAX)
+
+
+def _llm_cache_key(question: str, query: str, options: list[tuple[str, str]]) -> str:
+    h = hashlib.md5()
+    h.update(question.encode("utf-8"))
+    h.update(b"|")
+    h.update(query.encode("utf-8"))
+    for oid, content in options:
+        h.update(b"|")
+        h.update(oid.encode("utf-8"))
+        h.update(b":")
+        h.update(content.encode("utf-8"))
+    return h.hexdigest()
+
+
+def parse_answer_llm(
+    client,
+    question: str,
+    query: str,
+    options: list[tuple[str, str]],
+) -> str | None:
+    """Single LLM call that maps the user's reply to A/B/C/D or NO.
+    Returns 'A'..'D' or None. Fail-closed on any error (returns None)."""
+    if not query or not options:
+        return None
+    key = _llm_cache_key(question, query, options)
+    cached = _answer_llm_cache.get(key)
+    if cached is not None:
+        return cached if cached != "NO" else None
+
+    user_block = (
+        f"Question: {question}\n"
+        + "\n".join(f"{oid}: {content}" for oid, content in options)
+        + f"\nUser reply: {query}\n"
+    )
+    try:
+        resp = client.chat.completions.create(
+            model=azure.detect_model,
+            messages=[
+                {"role": "system", "content": QUIZ_ANSWER_PARSER_SYSTEM},
+                {"role": "user", "content": user_block},
+            ],
+            temperature=0.0,
+            max_tokens=4,
+        )
+        out = (resp.choices[0].message.content or "").strip().upper()
+        # Take the first character that's A/B/C/D/N to be tolerant.
+        for ch in out:
+            if ch in "ABCD":
+                _answer_llm_cache.put(key, ch)
+                return ch
+            if ch == "N":
+                _answer_llm_cache.put(key, "NO")
+                return None
+    except Exception:  # noqa: BLE001
+        return None
     return None
