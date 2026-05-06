@@ -1,6 +1,6 @@
 # LOMA RAG — Session Notes & Handoff
 
-Last updated: 2026-05-06.
+Last updated: 2026-05-07.
 Read this first when resuming work. Companion notes in user-memory at
 `C:\Users\huudan\.claude\projects\D--t-LOMA\memory\`.
 
@@ -241,3 +241,81 @@ When picking back up:
 3. Verify SearXNG: `curl http://localhost:8080/search?q=test&format=json | head`.
 4. Start API: `cd D:\t\LOMA\rag && python api.py`.
 5. Smoke: `python test_qa.py --id vi_def_antiselection -v`.
+
+---
+
+## Session 2026-05-07 — `/quiz/chat` endpoint shipped
+
+Merged `feat/quiz-chat` into main as merge commit `6119fe0` (16 commits +
+merge). Spec/plan committed alongside the code.
+
+### What changed in `/chat` response shape (earlier in the same session)
+The `/chat` envelope was reshaped to a wrapper template:
+```json
+{"success": bool, "data": {path, answer, citations, related_nodes,
+ en_search_query, intent, web_search_used}, "error": str}
+```
+- Removed `query` and `timings_ms` from the data field.
+- Each LOMA citation now carries a `source` field (original chunk filename).
+- New `intent` field added with value `"quiz"` when the user asks for a
+  quiz/test (e.g. "cho tôi quiz về underwriting"). Pipeline gate
+  `is_quiz_query` short-circuits before retrieval.
+
+### What `/quiz/chat` is
+A new endpoint for the **live quiz session UX**. Frontend passes the
+current quiz question + 4 options + the learner's prompt; backend
+classifies into one of:
+- `intent="answer"` (with `answer="A"|"B"|"C"|"D"`) — letter/digit/fuzzy/LLM
+- `intent="hint"` — keyword fuzzy match
+- `intent="finish"` — keyword fuzzy match (incl. typos like `kent thuc`)
+- `intent="question"` — discussion via RAG, but with a no-leak guardrail
+  that prevents the AI from revealing which option is correct
+- `intent="off_topic"` / `"unsupported_language"` — same canned responses
+  as `/chat`
+
+Both `POST /quiz/chat` (non-streaming) and `POST /quiz/chat/stream` (SSE)
+are wired. Response shape mirrors `/chat`'s wrapper template.
+
+### Files (all additive — `pipeline.py` and `chat.py` are bit-identical to before)
+- New: `loma_rag/prompt/quiz_discussion.py` (no-leak system prompts +
+  few-shot answer-parser prompt).
+- New: `loma_rag/rag/quiz_intent.py` (pure-function intent helpers:
+  `normalize_text`, `detect_end_session`, `detect_hint_request`,
+  `parse_answer_letter` / `_fuzzy` / `_llm`).
+- New: `loma_rag/rag/quiz_chat.py` (orchestrator: `run_quiz_chat` +
+  `stream_quiz_chat`; mirrors `pipeline.run_query` shape but with
+  quiz-specific intent gates and no-leak prompt injection).
+- New: `loma_rag/api/routes/quiz_chat.py` (FastAPI handlers).
+- Additive: `loma_rag/model/api_models.py` (Quiz* models with strict
+  validation: option ids `^[A-D]$`, max_length on question/query/content
+  to bound prompt-injection / DoS surface).
+- Additive: `loma_rag/api/app.py` (2 lines: import + include_router).
+- Tests: `tests/test_quiz_chat_intent.py` (87/87 unit cases including
+  LLM ones) and `tests/test_quiz_chat_pipeline.py` (6/6 end-to-end with
+  no-leak heuristic).
+
+### Acceptance verified
+- `python tests/test_quiz_chat_intent.py` → 87/87
+- `python tests/test_quiz_chat_pipeline.py` → 6/6 in 15.4s
+- `tests/test_qa.py --filter "vi_def_*" --filter "quiz_*"` → 9/9
+  (regression check: existing `/chat` behaviour intact)
+
+### Reference docs
+- Spec: `docs/superpowers/specs/2026-05-06-quiz-chat-design.md`
+- Plan: `docs/superpowers/plans/2026-05-07-quiz-chat.md` (12 TDD tasks,
+  full code in each step — useful as a template for future features)
+
+### Known v1 trade-offs
+- `detect_end_session` / `detect_hint_request` use whole-token
+  containment, which accepts a few false-positives like `"Don't finish
+  this"` or `"I'd rather not have a hint"`. Documented in spec §10.
+- Three trivial helpers (`_off_topic_response`, `_no_result_response`,
+  `_prep_web_docs`) and ~120 LOC of streaming-loop logic are duplicated
+  from `pipeline.py` to honour the user-imposed "do not modify chat
+  code" constraint. When that constraint is lifted, lift them to a
+  shared module and import from both.
+- Spec said `options` `max_length=6`; implementation uses `max_length=4`
+  because the id whitelist is A/B/C/D — pragmatic deviation, not a bug.
+- `parse_answer_llm` uses a few-shot prompt to coax `gpt-4o-mini` into
+  mapping conceptual paraphrases (e.g. "adverse selection" → option A
+  "Antiselection"). Tuning was needed in-task to get from 3/6 to 6/6.
