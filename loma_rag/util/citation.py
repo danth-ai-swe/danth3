@@ -16,6 +16,7 @@ def format_loma_citations(answer: str, chunks) -> list[dict]:
             sub = c.subsection or ""
             cited.append({
                 "label": c.chunk_id,
+                "source": c.source or None,
                 "lesson_id": c.lesson_id,
                 "course": c.course,
                 "section": c.section,

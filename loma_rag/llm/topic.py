@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from loma_rag.config.settings import azure
 from loma_rag.constant.thresholds import ANALYZE_CACHE_MAX
-from loma_rag.prompt.topic import TOPIC_CLASSIFIER_SYSTEM
+from loma_rag.prompt.topic import QUIZ_CLASSIFIER_SYSTEM, TOPIC_CLASSIFIER_SYSTEM
 from loma_rag.util.cache import LRUCache
 
 _topic_cache = LRUCache(ANALYZE_CACHE_MAX)
+_quiz_cache = LRUCache(ANALYZE_CACHE_MAX)
 
 
 def is_insurance_topic(client, query: str) -> bool:
@@ -38,3 +39,32 @@ def is_insurance_topic(client, query: str) -> bool:
         on_topic = True
     _topic_cache.put(query, on_topic)
     return on_topic
+
+
+def is_quiz_query(client, query: str) -> bool:
+    """Return True iff the query is asking for a quiz / test / practice questions.
+
+    Fail-closed: on classifier error treat as NOT a quiz so the normal answer
+    pipeline still runs.
+    """
+    if not query or not query.strip():
+        return False
+    cached = _quiz_cache.get(query)
+    if cached is not None:
+        return cached
+    try:
+        resp = client.chat.completions.create(
+            model=azure.detect_model,
+            messages=[
+                {"role": "system", "content": QUIZ_CLASSIFIER_SYSTEM},
+                {"role": "user", "content": query},
+            ],
+            temperature=0.0,
+            max_tokens=4,
+        )
+        out = (resp.choices[0].message.content or "").strip().upper()
+        is_quiz = out.startswith("YES")
+    except Exception:  # noqa: BLE001
+        is_quiz = False
+    _quiz_cache.put(query, is_quiz)
+    return is_quiz

@@ -37,7 +37,7 @@ from loma_rag.constant.responses import (
 from loma_rag.constant.tokens import INSUFFICIENT_TOKEN
 from loma_rag.llm.completion import analyze_query, select_answer_model, translate_to_english_query
 from loma_rag.llm.streaming import complete_with_sentinel_detect, stream_with_sentinel_detect
-from loma_rag.llm.topic import is_insurance_topic
+from loma_rag.llm.topic import is_insurance_topic, is_quiz_query
 from loma_rag.model.domain import AnswerResult, RetrievalResult
 from loma_rag.prompt.builder import build_loma_user_prompt, build_web_user_prompt
 from loma_rag.prompt.system import LOMA_SYSTEM, WEB_SYSTEM
@@ -100,6 +100,11 @@ def run_query(
     if not is_insurance_topic(chat_client, query):
         res.used_path = "off_topic"
         res.answer_text = _off_topic_response(user_lang)
+        return res
+
+    # Gate 3: quiz request → short-circuit; the caller handles quiz generation.
+    if is_quiz_query(chat_client, query):
+        res.used_path = "quiz"
         return res
 
     # Stage 1: retrieve LOMA chunks (skip retriever's internal translate by
@@ -244,6 +249,18 @@ def stream_query(
         yield {"type": "delta", "text": canned}
         yield {"type": "done", "path": "off_topic",
                "answer_text": canned, "citations": [],
+               "timings": {k: round(v * 1000) for k, v in timings.items()}}
+        return
+
+    # Gate 3: quiz request → short-circuit; no retrieval, no LLM answer.
+    yield {"type": "stage", "stage": "quiz_check"}
+    t0 = time.time()
+    quiz_intent = is_quiz_query(chat_client, query)
+    timings["quiz_check"] = time.time() - t0
+    if quiz_intent:
+        timings["total"] = time.time() - t_overall
+        yield {"type": "done", "path": "quiz",
+               "answer_text": "", "citations": [],
                "timings": {k: round(v * 1000) for k, v in timings.items()}}
         return
 

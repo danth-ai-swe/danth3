@@ -13,6 +13,7 @@ class ChatRequest(BaseModel):
 
 class Citation(BaseModel):
     label: str
+    source: Optional[str] = None  # original file name containing the chunk
     lesson_id: Optional[str] = None
     course: Optional[str] = None
     section: Optional[str] = None
@@ -32,12 +33,17 @@ class GraphNode(BaseModel):
     direct_hit: bool = False  # True if pulled by direct KG semantic search
 
 
-class ChatResponse(BaseModel):
-    query: str
+class ChatData(BaseModel):
     path: str
     answer: str
-    citations: list[Citation]
+    citations: list[Citation] = []
     related_nodes: list[GraphNode] = []
     en_search_query: str = ""
-    timings_ms: dict[str, int] = {}
+    intent: str = ""
+    web_search_used: bool = False
+
+
+class ChatResponse(BaseModel):
+    success: bool
+    data: Optional[ChatData] = None
     error: str = ""

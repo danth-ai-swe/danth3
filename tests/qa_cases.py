@@ -663,4 +663,45 @@ TESTS: list[dict] = [
             "must_contain": ["Sorry", "Insuripedia", "can't understand"],
         },
     },
+
+    # ===== quiz intent (short-circuit; no answer / no citations) =====
+    {
+        "id": "quiz_vi_basic",
+        "category": "quiz",
+        "query": "Cho tôi vài câu hỏi quiz về underwriting.",
+        "expects": {"path": "quiz"},
+    },
+    {
+        "id": "quiz_vi_module",
+        "category": "quiz",
+        "query": "Tạo cho tôi bài kiểm tra trắc nghiệm về Module 1 LOMA 281.",
+        "expects": {"path": "quiz"},
+    },
+    {
+        "id": "quiz_en_basic",
+        "category": "quiz",
+        "query": "Give me a quiz on annuities.",
+        "expects": {"path": "quiz"},
+    },
+    {
+        "id": "quiz_en_practice",
+        "category": "quiz",
+        "query": "Generate practice questions about LOMA 291 module 2.",
+        "expects": {"path": "quiz"},
+    },
+
+    # Negative quiz cases — informational queries that mention quiz/test
+    # vocabulary but should NOT be routed to the quiz intent.
+    {
+        "id": "quiz_neg_meta_question",
+        "category": "quiz",
+        "query": "Trong khóa LOMA 281 có những bài quiz nào và chúng dùng để làm gì?",
+        "expects": {"path": ["loma", "web"]},
+    },
+    {
+        "id": "quiz_neg_test_word",
+        "category": "quiz",
+        "query": "What does it mean when an underwriter says a case requires further testing?",
+        "expects": {"path": ["loma", "web"]},
+    },
 ]

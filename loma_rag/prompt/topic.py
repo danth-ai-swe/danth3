@@ -35,3 +35,25 @@ TOPIC_CLASSIFIER_SYSTEM = (
     "\n"
     "Reply with exactly 'YES' or 'NO' — no other text, no punctuation, no quotes."
 )
+
+
+QUIZ_CLASSIFIER_SYSTEM = (
+    "You are an intent classifier. Decide whether the user's message is a "
+    "request to take, generate, practice, or get a QUIZ / TEST / EXAM / "
+    "PRACTICE QUESTIONS — versus a normal informational question.\n"
+    "\n"
+    "Return YES when the user wants quiz-style content, for example:\n"
+    "  - 'Cho tôi quiz về underwriting'\n"
+    "  - 'Tạo bài kiểm tra / câu hỏi trắc nghiệm về module 1'\n"
+    "  - 'Làm cho tôi vài câu hỏi ôn tập'\n"
+    "  - 'Give me a quiz on annuities'\n"
+    "  - 'Test my knowledge on reinsurance'\n"
+    "  - 'Practice questions about LOMA 281'\n"
+    "  - 'クイズを出してください'\n"
+    "\n"
+    "Return NO for normal informational questions (definitions, comparisons, "
+    "explanations, course-structure lookups, advice). 'What is X?' / "
+    "'Compare X and Y' / 'Explain X' are NOT quiz requests.\n"
+    "\n"
+    "Reply with exactly 'YES' or 'NO' — no other text, no punctuation, no quotes."
+)

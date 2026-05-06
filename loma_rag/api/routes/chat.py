@@ -4,11 +4,22 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from loma_rag.model.api_models import ChatRequest, ChatResponse, Citation, GraphNode
+from loma_rag.model.api_models import ChatData, ChatRequest, ChatResponse, Citation, GraphNode
 from loma_rag.rag.pipeline import run_query, stream_query
 from loma_rag.util.sse import sse_event
 
 router = APIRouter()
+
+
+_PATH_TO_INTENT = {
+    "off_topic": "off_topic",
+    "unsupported_language": "unsupported_language",
+    "quiz": "quiz",
+}
+
+
+def _classify_intent(path: str) -> str:
+    return _PATH_TO_INTENT.get(path, "insurance")
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -20,7 +31,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
             req.query, top_k=req.top_k, web_k=req.web_k,
         )
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
+        return ChatResponse(success=False, data=None, error=f"{type(e).__name__}: {e}")
 
     # Build citations: only chunks/docs actually cited in the answer.
     citations: list[Citation] = []
@@ -29,6 +40,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
             if c.chunk_id and c.chunk_id in (result.answer_text or ""):
                 citations.append(Citation(
                     label=c.chunk_id,
+                    source=c.source or None,
                     lesson_id=c.lesson_id,
                     course=c.course,
                     section=c.section,
@@ -61,16 +73,17 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
             direct_hit=(n.node_id in direct_ids),
         ))
 
-    return ChatResponse(
-        query=req.query,
+    data = ChatData(
         path=result.used_path,
         answer=result.answer_text,
         citations=citations,
         related_nodes=related_nodes,
         en_search_query=result.en_search_query,
-        timings_ms={k: int(v * 1000) for k, v in (result.timings or {}).items()},
-        error=result.error,
+        intent=_classify_intent(result.used_path),
+        web_search_used=(result.used_path == "web"),
     )
+    success = not result.error and result.used_path != "error"
+    return ChatResponse(success=success, data=data, error=result.error or "")
 
 
 @router.post("/chat/stream")
