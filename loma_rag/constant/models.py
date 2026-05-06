@@ -1,0 +1,8 @@
+"""Model identifiers (defaults; runtime values come from config.settings)."""
+DEFAULT_DENSE_MODEL = "text-embedding-3-small"
+DEFAULT_CHAT_MODEL = "gpt-4o"
+DEFAULT_DETECT_MODEL = "gpt-4o-mini"
+DEFAULT_SHORT_ANSWER_MODEL = "gpt-4o-mini"
+COLBERT_MODEL = "colbert-ir/colbertv2.0"
+BM42_MODEL = "Qdrant/bm42-all-minilm-l6-v2-attentions"
+DEFAULT_RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"

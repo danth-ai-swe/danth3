@@ -1,0 +1,16 @@
+"""Numeric thresholds and limits."""
+
+# Chunking
+MIN_CHUNK_CHARS = 200
+MAX_CHUNK_CHARS = 6000  # ~1500 tokens
+
+# Embed / upsert batch
+EMBED_BATCH = 32
+UPSERT_BATCH = 16
+
+# LRU cache sizes
+TRANSLATE_CACHE_MAX = 256
+ANALYZE_CACHE_MAX = 512
+LANG_CACHE_MAX = 512
+DENSE_EMBED_CACHE_SIZE = 1024
+TRANSLATE_FOR_SEARCH_CACHE_SIZE = 512

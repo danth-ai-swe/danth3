@@ -1,0 +1,43 @@
+# Secrets — NEVER commit
+.env
+.env.*
+*.key
+*.pem
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code session state
+.claude/
+
+# Generated data and logs (regenerable via `python main.py ingest` + `index`)
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
+
+# Legacy backup folder used during refactor
+_legacy/
