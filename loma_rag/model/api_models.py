@@ -47,3 +47,51 @@ class ChatResponse(BaseModel):
     success: bool
     data: Optional[ChatData] = None
     error: str = ""
+
+
+class QuizOption(BaseModel):
+    id: str          # "A" | "B" | "C" | "D"
+    content: str
+
+    @classmethod
+    def _allowed_ids(cls) -> set[str]:
+        return {"A", "B", "C", "D"}
+
+
+class QuizChatRequest(BaseModel):
+    question: str = Field(..., min_length=1, description="Quiz question text")
+    options: list[QuizOption] = Field(..., min_length=2, max_length=6,
+                                      description="Multiple-choice options")
+    query: str = Field(..., min_length=1, description="Learner's prompt")
+    top_k: int = Field(7, ge=1, le=20)
+    web_k: int = Field(5, ge=1, le=10)
+
+    @classmethod
+    def _validate_option_ids(cls, options: list[QuizOption]) -> None:
+        seen = []
+        for o in options:
+            if o.id not in QuizOption._allowed_ids():
+                raise ValueError(f"option.id must be one of A/B/C/D, got {o.id!r}")
+            if o.id in seen:
+                raise ValueError(f"duplicate option.id {o.id!r}")
+            seen.append(o.id)
+
+    def model_post_init(self, __context) -> None:  # pydantic v2 hook
+        self._validate_option_ids(self.options)
+
+
+class QuizChatData(BaseModel):
+    path: str
+    intent: str
+    answer: Optional[str] = None       # "A"/"B"/"C"/"D" only when intent=="answer"
+    message: str = ""
+    citations: list[Citation] = []
+    related_nodes: list[GraphNode] = []
+    en_search_query: str = ""
+    web_search_used: bool = False
+
+
+class QuizChatResponse(BaseModel):
+    success: bool
+    data: Optional[QuizChatData] = None
+    error: str = ""
