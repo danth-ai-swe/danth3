@@ -113,6 +113,7 @@ EARLY_EXIT_RERANK_THRESHOLD = rag_cfg.early_exit_rerank
 EARLY_EXIT_RRF_THRESHOLD = rag_cfg.early_exit_rrf
 HIGH_CONFIDENCE_RERANK_THRESHOLD = rag_cfg.high_confidence_rerank
 HIGH_CONFIDENCE_RRF_THRESHOLD = rag_cfg.high_confidence_rrf
+SNIFF_CHARS = rag_cfg.sniff_chars
 
 
 def _inject_quiz_context(
@@ -226,6 +227,38 @@ def _run_discussion(
     res.intent = "question"
     res.path = "web"
     res.message = resp.choices[0].message.content or ""
+
+
+def _terminal_event(
+    *,
+    intent: str,
+    path: str,
+    message: str = "",
+    answer: Optional[str] = None,
+    chunks=None,
+    related_nodes=None,
+    direct_ids: Optional[set] = None,
+    web_docs=None,
+    en_search_query: str = "",
+    web_search_used: bool = False,
+    error: str = "",
+) -> dict:
+    """Build the terminal {'type':'done', ...} event with the same shape
+    the route layer expects when serialising QuizChatData."""
+    return {
+        "type": "done",
+        "intent": intent,
+        "path": path,
+        "message": message,
+        "answer": answer,
+        "chunks": list(chunks or []),
+        "related_nodes": list(related_nodes or []),
+        "direct_ids": list(direct_ids or []),
+        "web_docs": list(web_docs or []),
+        "en_search_query": en_search_query,
+        "web_search_used": web_search_used,
+        "error": error,
+    }
 
 
 def run_quiz_chat(
@@ -379,7 +412,6 @@ def stream_quiz_chat(
             temperature=0.2,
             stream=True,
         )
-        sniff_chars = rag_cfg.sniff_chars
         buf: list[str] = []
         decided = False
         for ev in stream:
@@ -395,13 +427,16 @@ def stream_quiz_chat(
                     insufficient = True
                     decided = True
                     break
-                if len(text) >= sniff_chars or "\n" in text:
+                if len(text) >= SNIFF_CHARS or "\n" in text:
                     decided = True
                     yield {"type": "delta", "text": text}
                     answer_full.append(text)
             else:
                 yield {"type": "delta", "text": delta}
                 answer_full.append(delta)
+        # Tail handler for short answers: if the response ended below sniff_chars
+        # with no newline, the in-loop branch never fired and buf still holds the
+        # whole reply (possibly the [INSUFFICIENT] sentinel). Mirror of pipeline.py.
         if not decided:
             text = "".join(buf)
             if INSUFFICIENT_TOKEN in text:
@@ -429,9 +464,11 @@ def stream_quiz_chat(
         try:
             en_query, web_docs = spec_future.result(timeout=60)
         except Exception as e:  # noqa: BLE001
+            canned = _no_result_response(user_lang)
+            yield {"type": "delta", "text": canned}
             yield _terminal_event(
                 intent="question", path="no_result",
-                message=_no_result_response(user_lang),
+                message=canned,
                 error=f"{type(e).__name__}: {e}",
             )
             return
@@ -440,17 +477,21 @@ def stream_quiz_chat(
         try:
             web_docs = web_fallback.retrieve(en_query, top_k=web_k)
         except Exception as e:  # noqa: BLE001
+            canned = _no_result_response(user_lang)
+            yield {"type": "delta", "text": canned}
             yield _terminal_event(
                 intent="question", path="no_result",
-                message=_no_result_response(user_lang),
+                message=canned,
                 error=f"{type(e).__name__}: {e}",
             )
             return
 
     if not web_docs:
+        canned = _no_result_response(user_lang)
+        yield {"type": "delta", "text": canned}
         yield _terminal_event(
             intent="question", path="no_result",
-            message=_no_result_response(user_lang),
+            message=canned,
             en_search_query=en_query,
         )
         return
@@ -481,35 +522,3 @@ def stream_quiz_chat(
         web_docs=list(web_docs), en_search_query=en_query,
         web_search_used=True,
     )
-
-
-def _terminal_event(
-    *,
-    intent: str,
-    path: str,
-    message: str = "",
-    answer: Optional[str] = None,
-    chunks=None,
-    related_nodes=None,
-    direct_ids: Optional[set] = None,
-    web_docs=None,
-    en_search_query: str = "",
-    web_search_used: bool = False,
-    error: str = "",
-) -> dict:
-    """Build the terminal {'type':'done', ...} event with the same shape
-    the route layer expects when serialising QuizChatData."""
-    return {
-        "type": "done",
-        "intent": intent,
-        "path": path,
-        "message": message,
-        "answer": answer,
-        "chunks": list(chunks or []),
-        "related_nodes": list(related_nodes or []),
-        "direct_ids": list(direct_ids or []),
-        "web_docs": list(web_docs or []),
-        "en_search_query": en_search_query,
-        "web_search_used": web_search_used,
-        "error": error,
-    }
