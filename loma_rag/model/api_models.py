@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+_ALLOWED_OPTION_IDS: frozenset[str] = frozenset("ABCD")
 
 
 class ChatRequest(BaseModel):
@@ -50,34 +52,35 @@ class ChatResponse(BaseModel):
 
 
 class QuizOption(BaseModel):
-    id: str          # "A" | "B" | "C" | "D"
-    content: str
-
-    @classmethod
-    def _allowed_ids(cls) -> set[str]:
-        return {"A", "B", "C", "D"}
+    id: str = Field(..., pattern=r"^[A-D]$")
+    content: str = Field(..., min_length=1, max_length=1000)
 
 
 class QuizChatRequest(BaseModel):
-    question: str = Field(..., min_length=1, description="Quiz question text")
-    options: list[QuizOption] = Field(..., min_length=2, max_length=6,
+    question: str = Field(..., min_length=1, max_length=2000,
+                          description="Quiz question text")
+    options: list[QuizOption] = Field(..., min_length=2, max_length=4,
                                       description="Multiple-choice options")
-    query: str = Field(..., min_length=1, description="Learner's prompt")
+    query: str = Field(..., min_length=1, max_length=2000,
+                       description="Learner's prompt")
     top_k: int = Field(7, ge=1, le=20)
     web_k: int = Field(5, ge=1, le=10)
 
+    @field_validator("options", mode="after")
     @classmethod
-    def _validate_option_ids(cls, options: list[QuizOption]) -> None:
-        seen = []
+    def _check_option_ids(cls, options: list[QuizOption]) -> list[QuizOption]:
+        bad: list[str] = [o.id for o in options if o.id not in _ALLOWED_OPTION_IDS]
+        if bad:
+            raise ValueError(f"option.id must be one of A/B/C/D, got {bad}")
+        seen: set[str] = set()
+        dup: list[str] = []
         for o in options:
-            if o.id not in QuizOption._allowed_ids():
-                raise ValueError(f"option.id must be one of A/B/C/D, got {o.id!r}")
             if o.id in seen:
-                raise ValueError(f"duplicate option.id {o.id!r}")
-            seen.append(o.id)
-
-    def model_post_init(self, __context) -> None:  # pydantic v2 hook
-        self._validate_option_ids(self.options)
+                dup.append(o.id)
+            seen.add(o.id)
+        if dup:
+            raise ValueError(f"duplicate option.id values: {dup}")
+        return options
 
 
 class QuizChatData(BaseModel):
