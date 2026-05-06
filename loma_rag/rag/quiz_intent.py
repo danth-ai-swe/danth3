@@ -168,3 +168,43 @@ def detect_hint_request(text: str) -> bool:
         elif kw in tokens:
             return True
     return False
+
+
+_DIGIT_TO_LETTER = {"1": "A", "2": "B", "3": "C", "4": "D"}
+
+# Single-token: letter or digit, optionally surrounded by () [] or trailing punctuation.
+_SINGLE_TOKEN_RE = re.compile(r"^[\(\[]?\s*([abcd1-4])\s*[\)\]\.\,]?$", re.IGNORECASE)
+
+# Phrasal: "option a", "đáp án b" (after diacritic fold -> "dap an b"),
+# "câu 2", "answer C". Captures the letter or digit.
+_PHRASAL_RE = re.compile(
+    r"^(option|dap an|cau|answer|chon|select)\s+[\(\[]?\s*([abcd1-4])\s*[\)\]\.\,]?$",
+    re.IGNORECASE,
+)
+
+
+def parse_answer_letter(text: str) -> str | None:
+    """Return 'A'/'B'/'C'/'D' if the text is an unambiguous option pick by
+    letter or digit. Else None.
+
+    Accepts:
+        A, a, B., (C), [D], 1..4, Option A, đáp án C, Câu 2, answer d
+    Rejects multi-token answers like 'A is correct' (those go to fuzzy/LLM).
+    """
+    if not text:
+        return None
+    raw = text.strip()
+    if not raw:
+        return None
+
+    m = _SINGLE_TOKEN_RE.match(raw)
+    if m:
+        tok = m.group(1).upper()
+        return _DIGIT_TO_LETTER.get(tok, tok)
+
+    folded = normalize_text(raw)
+    m = _PHRASAL_RE.match(folded)
+    if m:
+        tok = m.group(2).upper()
+        return _DIGIT_TO_LETTER.get(tok, tok)
+    return None

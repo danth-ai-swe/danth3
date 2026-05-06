@@ -137,6 +137,52 @@ def run_hint_tests(verbose: bool) -> tuple[int, int]:
     return n_pass, len(HINT_CASES)
 
 
+from loma_rag.rag.quiz_intent import parse_answer_letter  # noqa: E402
+
+# (input, expected_letter_or_None)
+LETTER_CASES: list[tuple[str, str | None]] = [
+    # positive — single tokens
+    ("A", "A"),
+    ("a", "A"),
+    ("  B  ", "B"),
+    ("c", "C"),
+    ("d.", "D"),
+    ("(A)", "A"),
+    ("[B]", "B"),
+    ("1", "A"),
+    ("2", "B"),
+    ("3", "C"),
+    ("4", "D"),
+    # positive — phrasal
+    ("Option A", "A"),
+    ("option b", "B"),
+    ("đáp án C", "C"),
+    ("dap an d", "D"),
+    ("answer A", "A"),
+    ("Câu 2", "B"),
+    # negative
+    ("E", None),
+    ("5", None),
+    ("A B", None),                        # ambiguous
+    ("A is the answer", None),            # multi-token, not pure pick
+    ("hint", None),
+    ("", None),
+    ("Antiselection là gì?", None),
+]
+
+
+def run_letter_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in LETTER_CASES:
+        actual = parse_answer_letter(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] parse_answer_letter({raw!r}) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(LETTER_CASES)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -159,6 +205,10 @@ def main() -> int:
     p, n = run_hint_tests(args.verbose)
     total_pass += p; total_count += n
     print(f"detect_hint_request: {p}/{n}")
+
+    p, n = run_letter_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"parse_answer_letter: {p}/{n}")
 
     elapsed = time.time() - t0
     print(f"\n=== {total_pass}/{total_count} passed in {elapsed:.1f}s ===")
