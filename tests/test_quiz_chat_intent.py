@@ -30,6 +30,7 @@ load_dotenv(HERE / ".env")
 
 from loma_rag.rag.quiz_intent import normalize_text  # noqa: E402
 from loma_rag.rag.quiz_intent import detect_end_session  # noqa: E402
+from loma_rag.rag.quiz_intent import detect_hint_request  # noqa: E402
 
 
 # --- normalize_text cases: (input, expected) ---
@@ -99,6 +100,43 @@ def run_end_session_tests(verbose: bool) -> tuple[int, int]:
     return n_pass, len(END_SESSION_CASES)
 
 
+HINT_CASES: list[tuple[str, bool]] = [
+    # positive
+    ("hint", True),
+    ("Hint!", True),
+    ("HINT", True),
+    ("hin", True),
+    ("give me a hint", True),
+    ("Can I have a hint?", True),
+    ("show me a hint please", True),
+    ("gợi ý", True),
+    ("gợi y", True),
+    ("goi y", True),
+    ("cho tôi gợi ý", True),
+    ("cho toi mot hint", True),
+    ("help", True),
+    ("help!", True),
+    # accepted v1 false-positives (token containment, no question-mark guard for hints)
+    ("what does 'hint' mean in poker?", True),
+    # negative
+    ("Antiselection là gì?", False),
+    ("A", False),
+    ("end session", False),
+]
+
+
+def run_hint_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in HINT_CASES:
+        actual = detect_hint_request(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] detect_hint_request({raw!r}) -> {actual}  expected={expected}")
+    return n_pass, len(HINT_CASES)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -117,6 +155,10 @@ def main() -> int:
     p, n = run_end_session_tests(args.verbose)
     total_pass += p; total_count += n
     print(f"detect_end_session: {p}/{n}")
+
+    p, n = run_hint_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"detect_hint_request: {p}/{n}")
 
     elapsed = time.time() - t0
     print(f"\n=== {total_pass}/{total_count} passed in {elapsed:.1f}s ===")

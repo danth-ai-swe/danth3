@@ -118,3 +118,53 @@ def detect_end_session(text: str) -> bool:
         elif kw in tokens:
             return True
     return False
+
+
+HINT_KEYWORDS = (
+    "cho tôi gợi ý",
+    "cho toi mot hint",
+    "give me a hint",
+    "show me a hint",
+    "can i have a hint",
+    "gợi ý",
+    "goi y",
+    "hint",
+    "hin",
+    "help",
+)
+_HINT_KEYWORDS_NORM = tuple(normalize_text(k) for k in HINT_KEYWORDS)
+
+# Token-set with Vietnamese pre-normalised so set membership works against
+# the normalised user text. Multi-word keywords use substring containment.
+_HINT_TOKEN_KEYWORDS = {
+    normalize_text(k) for k in ("hint", "hin", "help", "goi y", "gợi ý")
+}
+
+
+def detect_hint_request(text: str) -> bool:
+    """True iff the user's prompt is a hint request.
+
+    Procedure mirrors detect_end_session (exact / fuzzy / token-containment)
+    but does NOT skip on a trailing question mark — hint requests are often
+    phrased politely as questions ('Can I have a hint?'). The cost is one
+    accepted false-positive: 'what does "hint" mean in poker?' is
+    classified as a hint request.
+    """
+    if not text:
+        return False
+    n = normalize_text(text)
+    if not n:
+        return False
+    if n in _HINT_KEYWORDS_NORM:
+        return True
+    for kw in _HINT_KEYWORDS_NORM:
+        if difflib.SequenceMatcher(None, n, kw).ratio() >= 0.85:
+            return True
+    tokens = set(n.split())
+    for kw in _HINT_TOKEN_KEYWORDS:
+        if " " in kw:
+            if kw in n:
+                return True
+        elif kw in tokens:
+            return True
+    return False
