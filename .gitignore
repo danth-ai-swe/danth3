@@ -39,3 +39,7 @@ dist/
 
 # Legacy backup folder used during refactor
 _legacy/
+
+# Local model archives and downloaded HF model caches — too large for git
+model.7z
+model/
