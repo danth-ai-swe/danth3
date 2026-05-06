@@ -29,6 +29,7 @@ load_dotenv(HERE / ".env")
 # `--no-llm` flag and dotenv import are wired up here in advance.
 
 from loma_rag.rag.quiz_intent import normalize_text  # noqa: E402
+from loma_rag.rag.quiz_intent import detect_end_session  # noqa: E402
 
 
 # --- normalize_text cases: (input, expected) ---
@@ -59,6 +60,45 @@ def run_normalize_tests(verbose: bool) -> tuple[int, int]:
     return n_pass, len(NORMALIZE_CASES)
 
 
+# (input, expected_is_end_session)
+END_SESSION_CASES: list[tuple[str, bool]] = [
+    # positive
+    ("Kết thúc", True),
+    ("kết thúc phiên", True),
+    ("KENT THUC", True),                    # typo, fuzzy
+    ("end session", True),
+    ("End Quiz!", True),
+    ("submit and finish", True),
+    ("done", True),
+    ("quit", True),
+    ("exit", True),
+    ("stop", True),
+    ("nộp bài", True),
+    ("ngp bai", True),                       # typo per spec
+    ("thoát", True),
+    ("dừng lại đi", True),                   # contains "dung" token
+    ("I want to finish now", True),          # contains "finish" token
+    # negative
+    ("How do I end a contract?", False),
+    ("what does 'finish' mean here?", False),
+    ("Antiselection là gì?", False),
+    ("A", False),
+    ("hint", False),
+]
+
+
+def run_end_session_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in END_SESSION_CASES:
+        actual = detect_end_session(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] detect_end_session({raw!r}) -> {actual}  expected={expected}")
+    return n_pass, len(END_SESSION_CASES)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -73,6 +113,10 @@ def main() -> int:
     p, n = run_normalize_tests(args.verbose)
     total_pass += p; total_count += n
     print(f"normalize_text: {p}/{n}")
+
+    p, n = run_end_session_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"detect_end_session: {p}/{n}")
 
     elapsed = time.time() - t0
     print(f"\n=== {total_pass}/{total_count} passed in {elapsed:.1f}s ===")

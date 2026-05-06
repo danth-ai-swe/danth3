@@ -54,3 +54,67 @@ def normalize_text(text: str) -> str:
     s = "".join(ch for ch in s if not 0x0300 <= ord(ch) <= 0x036F)
     s = unicodedata.normalize("NFC", s)
     return s
+
+
+import difflib
+
+END_SESSION_KEYWORDS = (
+    # multi-word phrases first
+    "kết thúc phiên",
+    "kết thúc buổi học",
+    "submit and finish",
+    "end session",
+    "end quiz",
+    "kết thúc",
+    "nộp bài",
+    "thoát",
+    "dừng",
+    "finish",
+    "done",
+    "quit",
+    "exit",
+    "stop",
+)
+_END_KEYWORDS_NORM = tuple(normalize_text(k) for k in END_SESSION_KEYWORDS)
+
+# Tokens that, when present as a whole word, count as end-session intent.
+# Multi-word phrases are matched as substrings instead.
+_END_TOKEN_KEYWORDS = {
+    normalize_text(k) for k in
+    ("finish", "done", "quit", "exit", "stop", "thoát", "dừng", "nộp bài",
+     "kết thúc")
+}
+
+# Question-mark heuristic: if the original text ends with a question mark,
+# treat as a question, not a command. Keeps "what does 'finish' mean?" out.
+_QUESTION_MARK_RE = re.compile(r"[?？]\s*$")
+
+
+def detect_end_session(text: str) -> bool:
+    """True iff the user's prompt is an end-session command.
+
+    Match procedure:
+    1. Reject if text ends with a question mark.
+    2. Exact equality of the normalized text with any keyword.
+    3. difflib.SequenceMatcher ratio >= 0.85 against any keyword
+       (catches typos like 'kent thuc', 'ngp bai').
+    4. Whole-token containment for short imperative keywords.
+    """
+    if not text or _QUESTION_MARK_RE.search(text):
+        return False
+    n = normalize_text(text)
+    if not n:
+        return False
+    if n in _END_KEYWORDS_NORM:
+        return True
+    for kw in _END_KEYWORDS_NORM:
+        if difflib.SequenceMatcher(None, n, kw).ratio() >= 0.85:
+            return True
+    tokens = set(n.split())
+    for kw in _END_TOKEN_KEYWORDS:
+        if " " in kw:
+            if kw in n:
+                return True
+        elif kw in tokens:
+            return True
+    return False
