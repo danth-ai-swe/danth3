@@ -183,6 +183,49 @@ def run_letter_tests(verbose: bool) -> tuple[int, int]:
     return n_pass, len(LETTER_CASES)
 
 
+from loma_rag.rag.quiz_intent import parse_answer_fuzzy  # noqa: E402
+
+OPTS_EN = [
+    ("A", "Antiselection"),
+    ("B", "Underwriting risk"),
+    ("C", "Reinsurance"),
+    ("D", "Risk pooling"),
+]
+OPTS_VI = [
+    ("A", "Tái bảo hiểm"),
+    ("B", "Bảo hiểm nhân thọ"),
+    ("C", "Bảo hiểm nhóm"),
+    ("D", "Bảo hiểm tài sản"),
+]
+
+# (query, options, expected_letter_or_None)
+FUZZY_CASES: list[tuple[str, list[tuple[str, str]], str | None]] = [
+    # clear matches
+    ("antiselection", OPTS_EN, "A"),
+    ("Reinsurance", OPTS_EN, "C"),
+    ("risk pool", OPTS_EN, "D"),
+    ("Tái bảo hiểm", OPTS_VI, "A"),
+    ("Bao hiem nhom", OPTS_VI, "C"),                  # diacritic-folded
+    # ambiguous — too close between two options
+    ("Bảo hiểm", OPTS_VI, None),
+    # nothing close
+    ("hello world", OPTS_EN, None),
+    ("", OPTS_EN, None),
+]
+
+
+def run_fuzzy_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for query, options, expected in FUZZY_CASES:
+        actual = parse_answer_fuzzy(query, options)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] parse_answer_fuzzy({query!r}, ...) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(FUZZY_CASES)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -209,6 +252,10 @@ def main() -> int:
     p, n = run_letter_tests(args.verbose)
     total_pass += p; total_count += n
     print(f"parse_answer_letter: {p}/{n}")
+
+    p, n = run_fuzzy_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"parse_answer_fuzzy: {p}/{n}")
 
     elapsed = time.time() - t0
     print(f"\n=== {total_pass}/{total_count} passed in {elapsed:.1f}s ===")

@@ -208,3 +208,47 @@ def parse_answer_letter(text: str) -> str | None:
         tok = m.group(2).upper()
         return _DIGIT_TO_LETTER.get(tok, tok)
     return None
+
+
+FUZZY_MIN_BEST = 0.75
+FUZZY_MIN_GAP = 0.15
+
+
+def parse_answer_fuzzy(
+    query: str,
+    options: list[tuple[str, str]],
+) -> str | None:
+    """Return 'A'/'B'/'C'/'D' if the query is fuzzy-close to exactly one
+    option content, else None.
+
+    `options` is a list of (id, content) pairs. Both query and contents
+    are normalised before scoring (lower, diacritic-folded).
+
+    Decision rule: the best score must be >= FUZZY_MIN_BEST AND it must
+    beat the second-best by at least FUZZY_MIN_GAP. This prevents
+    ambiguous picks (e.g. 'Bảo hiểm' against four 'Bảo hiểm X' options).
+    """
+    q = normalize_text(query)
+    if not q or not options:
+        return None
+    scored: list[tuple[float, str]] = []
+    for opt_id, content in options:
+        c = normalize_text(content)
+        if not c:
+            continue
+        ratio = difflib.SequenceMatcher(None, q, c).ratio()
+        # Boost for whole-token containment of any non-trivial option word.
+        # Kept below FUZZY_MIN_BEST so containment alone never wins —
+        # it only floors otherwise-low ratios so a real top match's gap
+        # over a containment-only contender stays meaningful.
+        if any(t for t in c.split() if len(t) > 2 and t in q.split()):
+            ratio = max(ratio, 0.70)
+        scored.append((ratio, opt_id))
+    if not scored:
+        return None
+    scored.sort(reverse=True)
+    best_score, best_id = scored[0]
+    second = scored[1][0] if len(scored) > 1 else 0.0
+    if best_score >= FUZZY_MIN_BEST and (best_score - second) >= FUZZY_MIN_GAP:
+        return best_id
+    return None
