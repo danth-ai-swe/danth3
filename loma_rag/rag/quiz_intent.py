@@ -10,8 +10,22 @@ import re
 import unicodedata
 
 
-_PUNCT_TRIM_RE = re.compile(r'^[\s\.\,\!\?\;\:\"\'\(\)\[\]]+|[\s\.\,\!\?\;\:\"\'\(\)\[\]]+$')
 _WS_RE = re.compile(r"\s+")
+
+
+def _is_edge_strippable(ch: str) -> bool:
+    """True for whitespace, separators, and any Unicode punctuation."""
+    cat = unicodedata.category(ch)
+    return cat[0] in ("P", "Z") or cat == "Cc"
+
+
+def _strip_token(tok: str) -> str:
+    i, j = 0, len(tok)
+    while i < j and _is_edge_strippable(tok[i]):
+        i += 1
+    while j > i and _is_edge_strippable(tok[j - 1]):
+        j -= 1
+    return tok[i:j]
 
 
 def normalize_text(text: str) -> str:
@@ -24,13 +38,19 @@ def normalize_text(text: str) -> str:
     """
     if not text:
         return ""
-    s = text.strip().lower()
+    # Vietnamese đ/Đ are not combining; fold both cases before lowercasing
+    # so the subsequent NFD path handles only diacritic marks.
+    s = text.replace("Đ", "d").replace("đ", "d")
+    s = s.strip().lower()
     s = _WS_RE.sub(" ", s)
-    # Strip leading/trailing punctuation per-token so e.g. "Option (A)." -> "option a".
-    s = " ".join(_PUNCT_TRIM_RE.sub("", tok) for tok in s.split(" ") if tok)
-    # Fold diacritics: "kết thúc" -> "ket thuc", "đố" -> "do".
+    # Strip leading/trailing punctuation per-token (Unicode-aware) so e.g.
+    # "Option (A)." -> "option a" and "Kết thúc。" -> "ket thuc".
+    s = " ".join(t for t in (_strip_token(tok) for tok in s.split(" ")) if t)
+    # Fold Latin diacritics: "kết thúc" -> "ket thuc". Restrict to the
+    # "Combining Diacritical Marks" block (U+0300-U+036F) so that CJK
+    # voicing marks (e.g. dakuten on ズ) survive — otherwise "クイズ"
+    # would collapse to "クイス".
     s = unicodedata.normalize("NFD", s)
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    # Vietnamese đ/Đ are not combining; map separately.
-    s = s.replace("đ", "d").replace("Đ", "d")
+    s = "".join(ch for ch in s if not 0x0300 <= ord(ch) <= 0x036F)
+    s = unicodedata.normalize("NFC", s)
     return s

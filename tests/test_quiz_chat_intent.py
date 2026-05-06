@@ -25,6 +25,8 @@ HERE = Path(__file__).resolve().parent.parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 load_dotenv(HERE / ".env")
+# Note: LLM-backed cases (parse_answer_llm) are added in Task 8; the
+# `--no-llm` flag and dotenv import are wired up here in advance.
 
 from loma_rag.rag.quiz_intent import normalize_text  # noqa: E402
 
@@ -36,6 +38,12 @@ NORMALIZE_CASES: list[tuple[str, str]] = [
     ("Option (A).", "option a"),
     ("nộp\tbài", "nop bai"),
     ("", ""),
+    ("a   b", "a b"),
+    ("option(a)", "option(a"),
+    ("Kết thúc。", "ket thuc"),
+    ("Đố là quiz?", "do la quiz"),
+    ("  ...kết thúc...  ", "ket thuc"),
+    ("クイズ！", "クイズ"),
 ]
 
 
