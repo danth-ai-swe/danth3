@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from loma_rag.api.routes.chat import router as chat_router
 from loma_rag.api.routes.health import router as health_router
+from loma_rag.api.routes.quiz_chat import router as quiz_chat_router
 from loma_rag.llm.embedding import embed_sparse, embed_colbert
 from loma_rag.llm.openai_client import make_chat_client
 from loma_rag.rag.retriever import Retriever
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(chat_router)
+    app.include_router(quiz_chat_router)
     return app
 
 
