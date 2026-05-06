@@ -1,0 +1,49 @@
+running 58/58 test cases  |  rerank=True  graph=True  fallback=True
+
+[ 1/58] vi_def_antiselection              (concept_vi)
+    Q: Antiselection là gì? Tại sao underwriter cần quan tâm tới nó?
+[graph] loaded 343 nodes, 395 edges from D:\t\LOMA\rag\out
+D:\t\LOMA\rag\.venv\lib\site-packages\qdrant_client\qdrant_remote.py:288: UserWarning: Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.
+  show_warning(
+    FAIL  path=error  chunks=0  web=0  nodes=0  7.4s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 2/58] vi_def_longevity                  (concept_vi)
+    Q: Longevity risk có nghĩa là gì trong bảo hiểm?
+    FAIL  path=error  chunks=0  web=0  nodes=0  5.9s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 3/58] vi_def_reinsurance                (concept_vi)
+    Q: Reinsurance là gì và ai nhận rủi ro?
+    FAIL  path=error  chunks=0  web=0  nodes=0  6.0s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 4/58] en_def_surrender                  (concept_en)
+    Q: What is a surrender charge in a deferred annuity and when does it apply?
+    FAIL  path=error  chunks=0  web=0  nodes=0  5.9s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 5/58] en_def_underwriting               (concept_en)
+    Q: Explain the role of underwriting in insurance.
+    FAIL  path=error  chunks=0  web=0  nodes=0  5.8s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 6/58] lang_override_vi_to_en            (language_override)
+    Q: Antiselection là gì? Please answer in English only.
+    FAIL  path=error  chunks=0  web=0  nodes=0  5.7s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 7/58] lang_override_en_to_vi            (language_override)
+    Q: What is reinsurance? Hãy trả lời bằng tiếng Việt.
+    FAIL  path=error  chunks=0  web=0  nodes=0  24.4s
+      - path: expected 'loma', got 'error'
+      - no answer (used_path=error, error='ResponseHandlingException: [WinError 10054] An existing connection was forcibly closed by the remote host')
+
+[ 8/58] cmp_term_vs_whole_en              (comparison_en)
+    Q: What is the difference between term life insurance and whole life insurance?

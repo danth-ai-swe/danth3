@@ -1,0 +1,90 @@
+benchmarking 17 case(s) against http://127.0.0.1:8000
+[ 1/17] vi_def_antiselection             (concept_vi)
+    chat  : total=  8450ms  path=loma  chars=758  timings={'hyde': 2344, 'embed': 454, 'qdrant': 29, 'rerank': 337, 'graph': 0}
+    stream: total= 11247ms  ttft=2490ms  path=loma  chars=791  chars/s=91
+[ 2/17] vi_def_longevity                 (concept_vi)
+    chat  : total=  7055ms  path=loma  chars=612  timings={'hyde': 1952, 'embed': 421, 'qdrant': 17, 'rerank': 317, 'graph': 0}
+    stream: total=  4506ms  ttft=1963ms  path=loma  chars=410  chars/s=176
+[ 3/17] vi_def_reinsurance               (concept_vi)
+    chat  : total=  5210ms  path=loma  chars=519  timings={'hyde': 1601, 'embed': 623, 'qdrant': 26, 'rerank': 358, 'graph': 0}
+    stream: total=  3351ms  ttft=1958ms  path=loma  chars=478  chars/s=409
+[ 4/17] en_def_surrender                 (concept_en)
+    chat  : total=  3065ms  path=loma  chars=654  timings={'embed': 624, 'qdrant': 7, 'rerank': 276, 'graph': 0}
+    stream: total=  3940ms  ttft=1812ms  path=loma  chars=711  chars/s=373
+[ 5/17] en_def_underwriting              (concept_en)
+    chat  : total=  6216ms  path=loma  chars=1302  timings={'embed': 606, 'qdrant': 19, 'rerank': 307, 'graph': 0}
+    stream: total=  9281ms  ttft=1855ms  path=loma  chars=1587  chars/s=220
+[ 6/17] lang_override_vi_to_en           (language_override)
+    chat  : total=  6766ms  path=loma  chars=679  timings={'hyde': 2446, 'embed': 423, 'qdrant': 17, 'rerank': 329, 'graph': 0}
+    stream: total=  5584ms  ttft=2084ms  path=loma  chars=699  chars/s=200
+[ 7/17] lang_override_en_to_vi           (language_override)
+    chat  : total= 11194ms  path=loma  chars=794  timings={'hyde': 2007, 'embed': 520, 'qdrant': 21, 'rerank': 304, 'graph': 0}
+    stream: total=  4743ms  ttft=1902ms  path=loma  chars=800  chars/s=306
+[ 8/17] cmp_term_vs_whole_en             (comparison_en)
+    chat  : total=  5949ms  path=loma  chars=1632  timings={'embed': 896, 'qdrant': 29, 'rerank': 297, 'graph': 0}
+    stream: total=  5179ms  ttft=1705ms  path=loma  chars=1552  chars/s=477
+[ 9/17] cmp_speculative_vs_pure_vi       (comparison_vi)
+    chat  : total=  7074ms  path=loma  chars=482  timings={'hyde': 2583, 'embed': 469, 'qdrant': 27, 'rerank': 272, 'graph': 0}
+    stream: total=  6425ms  ttft=2139ms  path=loma  chars=554  chars/s=136
+[10/17] cmp_risk_transfer_vs_pooling_vi  (comparison_vi)
+    chat  : total=  7453ms  path=loma  chars=1454  timings={'hyde': 2654, 'embed': 465, 'qdrant': 29, 'rerank': 382, 'graph': 0}
+    stream: total=  6655ms  ttft=1643ms  path=loma  chars=2022  chars/s=419
+[11/17] kg_contract_types_vi             (kg_traversal_vi)
+    chat  : total= 12239ms  path=loma  chars=1766  timings={'hyde': 2102, 'embed': 440, 'qdrant': 31, 'rerank': 222, 'graph': 0}
+    stream: total=  8465ms  ttft=1960ms  path=loma  chars=1665  chars/s=265
+[12/17] summary_module1_281_vi           (summary_vi)
+    chat  : total= 16613ms  path=web  chars=1249  timings={'hyde': 2189, 'embed': 480, 'qdrant': 9, 'rerank': 282, 'graph': 0}
+    stream: total= 14132ms  ttft=8531ms  path=web  chars=1496  chars/s=278
+[13/17] summary_annuity_overview_en      (summary_en)
+    chat  : total=  9275ms  path=loma  chars=2113  timings={'embed': 605, 'qdrant': 19, 'rerank': 462, 'graph': 0}
+    stream: total=  7411ms  ttft=2318ms  path=loma  chars=1791  chars/s=368
+[14/17] doc_compare_281_vs_291_vi        (doc_compare_vi)
+    chat  : total= 21919ms  path=web  chars=797  timings={'hyde': 7655, 'embed': 458, 'qdrant': 32, 'rerank': 280, 'graph': 0}
+    stream: total= 13151ms  ttft=8659ms  path=web  chars=683  chars/s=155
+[15/17] web_solvency_ii_vi               (web_fallback_vi)
+    chat  : total= 14357ms  path=web  chars=1156  timings={'hyde': 1636, 'embed': 485, 'qdrant': 24, 'rerank': 270, 'graph': 0}
+    stream: total= 13895ms  ttft=9248ms  path=web  chars=1310  chars/s=296
+[16/17] web_insurtech_en                 (web_fallback_en)
+    chat  : total= 19446ms  path=web  chars=2372  timings={'embed': 564, 'qdrant': 17, 'rerank': 300, 'graph': 0}
+    stream: total= 25897ms  ttft=14689ms  path=web  chars=2184  chars/s=195
+[17/17] web_unrelated_vi                 (web_fallback_vi)
+    chat  : total= 18326ms  path=web  chars=1053  timings={'hyde': 1451, 'embed': 553, 'qdrant': 26, 'rerank': 262, 'graph': 0}
+    stream: total= 11037ms  ttft=6893ms  path=web  chars=1109  chars/s=268
+
+wrote D:\t\LOMA\rag\out\bench_results_v3.jsonl
+
+=== Latency summary ===
+
+[Non-streaming /chat] total_ms
+  all                      n=17   min= 3065  med= 8450  p95=19940  max=21919 ms
+  loma path                n=12   min= 3065  med= 7064  p95=11664  max=12239 ms
+  web fallback             n=5    min=14357  med=18326  p95=21424  max=21919 ms
+
+[Streaming /chat/stream] TTFT_ms (Time To First Token)
+  all                      n=17   min= 1643  med= 2084  p95=10336  max=14689 ms
+  loma path                n=12   min= 1643  med= 1959  p95= 2396  max= 2490 ms
+  web fallback             n=5    min= 6893  med= 8659  p95=13601  max=14689 ms
+
+[Streaming /chat/stream] total_ms
+  all                      n=17   min= 3351  med= 7411  p95=16485  max=25897 ms
+
+=== Stage breakdown — server timings (median, ms) ===
+
+Stage                     loma  web
+  retrieve.hyde                 -       -
+  retrieve.embed                -       -
+  retrieve.qdrant               -       -
+  retrieve.rerank               -       -
+  retrieve.graph                -       -
+  loma_answer                   -       -
+  translate                     -       -
+  web_search                    -       -
+  web_answer                    -       -
+  total                         -       -
+
+=== Slowest 5 cases (non-streaming) ===
+  doc_compare_281_vs_291_vi         total=21919ms  path=web
+  web_insurtech_en                  total=19446ms  path=web
+  web_unrelated_vi                  total=18326ms  path=web
+  summary_module1_281_vi            total=16613ms  path=web
+  web_solvency_ii_vi                total=14357ms  path=web

@@ -28,9 +28,6 @@ __pycache__/
 # Claude Code session state
 .claude/
 
-# Generated data and logs (regenerable via `python main.py ingest` + `index`)
-out/
-
 # OS
 .DS_Store
 Thumbs.db

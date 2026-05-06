@@ -1,0 +1,61 @@
+loaded 190 quiz items
+config: rerank=True graph=True llm_judge=True
+
+init retriever (lazy: BM42 + reranker download/load on first call)…
+
+running eval…
+[graph] loaded 343 nodes, 395 edges from D:\t\LOMA\rag\out
+  [ 10/190] LOMA281_M1L2_Q3              ✓  llm✓  (38s, eta 692s)
+  [ 20/190] LOMA281_M1L4_Q1              ✓  llm=4≠0  (73s, eta 618s)
+  [ 30/190] LOMA281_M2L1_Q5              ✓  llm✓  (106s, eta 564s)
+  [ 40/190] LOMA281_M2L3_Q2              ✓  llm✓  (138s, eta 519s)
+  [ 50/190] LOMA281_M2L4_Q2              ✓  llm=2≠3  (170s, eta 477s)
+  [ 60/190] LOMA281_M3L1_Q4              ✓  llm✓  (202s, eta 438s)
+  [ 70/190] LOMA281_M3L2_Q5           r=-1  llm✓  (234s, eta 401s)
+  [ 80/190] LOMA281_M3L3_Q6              ✓  llm✓  (269s, eta 370s)
+  [ 90/190] LOMA281_M4L2_Q4              ✓  llm✓  (303s, eta 336s)
+  [100/190] LOMA291_M1L1_Q1            r=2  llm✓  (332s, eta 299s)
+  [110/190] LOMA291_M1L3_Q2              ✓  llm✓  (366s, eta 266s)
+  [120/190] LOMA291_M2L1_Q4              ✓  llm✓  (401s, eta 234s)
+  [130/190] LOMA291_M2L2_Q5           r=16  llm✓  (438s, eta 202s)
+  [140/190] LOMA291_M2L3_Q4              ✓  llm✓  (470s, eta 168s)
+  [150/190] LOMA291_M2L4_Q5           r=12  llm✓  (502s, eta 134s)
+  [160/190] LOMA291_M3L1_Q6              ✓  llm✓  (534s, eta 100s)
+  [170/190] LOMA291_M3L3_Q1            r=5  llm✓  (570s, eta 67s)
+  [180/190] LOMA291_M4L1_Q5            r=2  llm✓  (603s, eta 33s)
+  [190/190] LOMA291_M4L2_Q7              ✓  llm✓  (635s, eta 0s)
+
+wrote D:\t\LOMA\rag\out\eval_results.jsonl
+
+=== Summary (n=190, errors=0) ===
+
+Lesson-recall@k (does any of top-k chunks match the quiz's lesson_id?)
+  recall@ 1 = 0.721  (137/190)
+  recall@ 3 = 0.868  (165/190)
+  recall@ 5 = 0.900  (171/190)
+  recall@10 = 0.937  (178/190)
+  recall@20 = 0.974  (185/190)
+  MRR    = 0.801  (lesson never found in top-20: 5/190)
+
+Lesson-recall@5 by difficulty:
+  Advanced       0.815  (44/54)
+  Beginner       0.936  (44/47)
+  Intermediate   0.933  (83/89)
+
+Lesson-recall@5 by course:
+  LOMA281    0.919  (91/99)
+  LOMA291    0.879  (80/91)
+
+LLM answer accuracy:
+  overall    0.879  (167/190)
+  when lesson IS in top-5: accuracy = 0.871  (149/171)
+  when lesson NOT in top-5: accuracy = 0.947  (18/19)
+
+LLM accuracy by difficulty:
+  Advanced       0.889  (48/54)
+  Beginner       0.936  (44/47)
+  Intermediate   0.843  (75/89)
+
+LLM accuracy by course:
+  LOMA281    0.798  (79/99)
+  LOMA291    0.967  (88/91)

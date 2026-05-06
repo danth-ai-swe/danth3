@@ -1,0 +1,244 @@
+running 51/51 test cases  |  rerank=True  graph=True  fallback=True
+
+[ 1/51] vi_def_antiselection              (concept_vi)
+    Q: Antiselection là gì? Tại sao underwriter cần quan tâm tới nó?
+[graph] loaded 343 nodes, 395 edges from D:\t\LOMA\rag\out
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.0s
+
+[ 2/51] vi_def_longevity                  (concept_vi)
+    Q: Longevity risk có nghĩa là gì trong bảo hiểm?
+    PASS  path=loma  chunks=5  web=0  nodes=12  12.6s
+
+[ 3/51] vi_def_reinsurance                (concept_vi)
+    Q: Reinsurance là gì và ai nhận rủi ro?
+    PASS  path=loma  chunks=5  web=0  nodes=12  5.8s
+
+[ 4/51] en_def_surrender                  (concept_en)
+    Q: What is a surrender charge in a deferred annuity and when does it apply?
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.7s
+
+[ 5/51] en_def_underwriting               (concept_en)
+    Q: Explain the role of underwriting in insurance.
+    PASS  path=loma  chunks=5  web=0  nodes=12  14.5s
+
+[ 6/51] lang_override_vi_to_en            (language_override)
+    Q: Antiselection là gì? Please answer in English only.
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.0s
+
+[ 7/51] lang_override_en_to_vi            (language_override)
+    Q: What is reinsurance? Hãy trả lời bằng tiếng Việt.
+    PASS  path=loma  chunks=5  web=0  nodes=12  13.4s
+
+[ 8/51] cmp_term_vs_whole_en              (comparison_en)
+    Q: What is the difference between term life insurance and whole life insurance?
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.3s
+
+[ 9/51] cmp_speculative_vs_pure_vi        (comparison_vi)
+    Q: So sánh speculative risk và pure risk. Loại nào có thể được bảo hiểm?
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.5s
+
+[10/51] cmp_risk_transfer_vs_pooling_vi   (comparison_vi)
+    Q: So sánh giữa Risk Transfer và Risk Pooling.
+    PASS  path=loma  chunks=5  web=0  nodes=12  11.9s
+
+[11/51] kg_contract_types_vi              (kg_traversal_vi)
+    Q: Theo luật hợp đồng, một insurance contract có thể được phân loại thành các kiểu hợp đồng nào (ví dụ aleatory, unilateral, contract of adhesion…)? Liệt kê và mô tả ngắn gọn từng loại.
+    PASS  path=loma  chunks=5  web=0  nodes=12  10.1s
+
+[12/51] summary_module1_281_vi            (summary_vi)
+    Q: Tóm tắt các nội dung chính của Module 1 trong LOMA 281 (Risk and Insurance).
+    PASS  path=loma  chunks=5  web=0  nodes=6  28.8s
+
+[13/51] summary_annuity_overview_en       (summary_en)
+    Q: Give me an overview of the types of annuity products covered in this course.
+    PASS  path=loma  chunks=5  web=0  nodes=12  18.3s
+
+[14/51] doc_compare_281_vs_291_vi         (doc_compare_vi)
+    Q: LOMA 281 và LOMA 291 khác nhau ở điểm nào về phạm vi nội dung?
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.3s
+
+[15/51] web_solvency_ii_vi                (web_fallback_vi)
+    Q: Solvency II framework yêu cầu gì về capital requirements cho insurer ở EU?
+    PASS  path=web  chunks=5  web=5  nodes=10  16.8s
+
+[16/51] web_insurtech_en                  (web_fallback_en)
+    Q: What are the latest insurtech innovation trends in 2024?
+    PASS  path=web  chunks=5  web=5  nodes=12  14.9s
+
+[17/51] web_unrelated_vi                  (web_fallback_vi)
+    Q: Bitcoin có phải là khoản đầu tư an toàn không?
+    PASS  path=web  chunks=5  web=5  nodes=12  16.9s
+
+[18/51] struct_281_module_count_vi        (structural_vi)
+    Q: Khóa LOMA 281 có tất cả bao nhiêu module và bao nhiêu lesson?
+    PASS  path=loma  chunks=5  web=0  nodes=4  6.2s
+
+[19/51] struct_291_module_count_en        (structural_en)
+    Q: How many modules and lessons does LOMA 291 contain in total?
+    PASS  path=loma  chunks=5  web=0  nodes=12  2.5s
+
+[20/51] struct_281_module4_lessons_vi     (structural_vi)
+    Q: Module 4 của LOMA 281 có những lesson nào? Liệt kê đầy đủ.
+    PASS  path=loma  chunks=5  web=0  nodes=12  4.8s
+
+[21/51] struct_281_lesson_title_en        (structural_en)
+    Q: What is the title of Lesson 3 in Module 1 of LOMA 281?
+    PASS  path=loma  chunks=5  web=0  nodes=7  2.2s
+
+[22/51] struct_291_module2_lessons_vi     (structural_vi)
+    Q: Trong module 2 của LOMA 291 có bao nhiêu lesson và mỗi lesson tên gì?
+    PASS  path=loma  chunks=5  web=0  nodes=12  4.9s
+
+[23/51] syllabus_281_hours_vi             (syllabus_vi)
+    Q: Khóa LOMA 281 dài bao nhiêu giờ?
+    PASS  path=loma  chunks=5  web=0  nodes=6  5.2s
+
+[24/51] syllabus_291_hours_en             (syllabus_en)
+    Q: What is the total duration of LOMA 291 in hours?
+    PASS  path=loma  chunks=5  web=0  nodes=12  2.6s
+
+[25/51] syllabus_method_vi                (syllabus_vi)
+    Q: Phương pháp đào tạo của LOMA 281 là gì?
+    PASS  path=loma  chunks=5  web=0  nodes=4  4.0s
+
+[26/51] syllabus_objectives_281_en        (syllabus_en)
+    Q: What are the main course objectives of LOMA 281?
+    PASS  path=loma  chunks=5  web=0  nodes=4  7.8s
+
+[27/51] syllabus_outcomes_291_vi          (syllabus_vi)
+    Q: LOMA 291 có những kết quả đầu ra (outcomes) gì sau khi học xong?
+    PASS  path=loma  chunks=5  web=0  nodes=12  15.5s
+
+[28/51] syllabus_passing_281_vi           (syllabus_vi)
+    Q: Tiêu chí để hoàn thành (đậu) khóa LOMA 281 là gì?
+    FAIL  path=web  chunks=5  web=5  nodes=5  12.1s
+      - path: expected 'loma', got 'web'
+      - must_contain_any: none of ['80', 'quiz'] in answer
+
+[29/51] syllabus_prereq_291_en            (syllabus_en)
+    Q: What are the prerequisites for taking LOMA 291?
+    PASS  path=loma  chunks=5  web=0  nodes=11  7.6s
+
+[30/51] syllabus_learners_vi              (syllabus_vi)
+    Q: Đối tượng học của khóa LOMA 281 là ai?
+    PASS  path=loma  chunks=5  web=0  nodes=7  5.5s
+
+[31/51] schedule_lesson_duration_vi       (schedule_vi)
+    Q: Lesson 1 module 1 LOMA 281 mất bao nhiêu giờ và học theo cách nào?
+    PASS  path=loma  chunks=5  web=0  nodes=7  7.4s
+
+[32/51] schedule_module_duration_vi       (schedule_vi)
+    Q: Học hết module 3 của LOMA 281 mất bao nhiêu giờ?
+    FAIL  path=web  chunks=5  web=5  nodes=5  11.4s
+      - path: expected 'loma', got 'web'
+      - must_contain_any: none of ['6', 'giờ', 'hours'] in answer
+
+[33/51] schedule_lesson_sections_vi       (schedule_vi)
+    Q: Lesson 2 module 1 LOMA 281 có những section nào được giảng?
+    PASS  path=loma  chunks=5  web=0  nodes=4  7.0s
+
+[34/51] schedule_delivery_en              (schedule_en)
+    Q: How is Module 2 Lesson 2 of LOMA 291 delivered?
+    PASS  path=loma  chunks=5  web=0  nodes=9  4.7s
+
+[35/51] concept_annuity_basics_vi         (concept_vi)
+    Q: Annuity là gì và nó khác bảo hiểm nhân thọ ở điểm nào?
+    PASS  path=loma  chunks=5  web=0  nodes=12  16.4s
+
+[36/51] concept_underwriting_en           (concept_en)
+    Q: Explain the underwriting process and how underwriters classify proposed insureds into risk classes.
+    PASS  path=loma  chunks=5  web=0  nodes=12  10.9s
+
+[37/51] concept_group_insurance_vi        (concept_vi)
+    Q: Group insurance khác individual insurance ở những điểm nào về cách bán và underwriting?
+    PASS  path=loma  chunks=5  web=0  nodes=8  14.7s
+
+[38/51] concept_dividend_en               (concept_en)
+    Q: How do policy dividends work in participating life insurance policies?
+    PASS  path=loma  chunks=5  web=0  nodes=6  10.8s
+
+[39/51] concept_grace_period_vi           (concept_vi)
+    Q: Grace period trong hợp đồng bảo hiểm nhân thọ có ý nghĩa gì?
+    PASS  path=loma  chunks=5  web=0  nodes=7  16.2s
+
+[40/51] compare_immediate_deferred_annuity_vi  (comparison_vi)
+    Q: So sánh immediate annuity và deferred annuity. Khác nhau cơ bản ở điều gì?
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.6s
+
+[41/51] compare_individual_group_en       (comparison_en)
+    Q: What are the key differences between individual life insurance and group life insurance?
+    PASS  path=loma  chunks=5  web=0  nodes=11  10.3s
+
+[42/51] compare_par_nonpar_en             (comparison_en)
+    Q: Compare participating and nonparticipating life insurance policies.
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.5s
+
+[43/51] kg_risk_management_en             (kg_traversal_en)
+    Q: List the four main risk management techniques and give a short example for each.
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.6s
+
+[44/51] synth_choose_term_life_vi         (synthesis_vi)
+    Q: Một người trẻ độc thân, thu nhập trung bình, muốn bảo vệ tài chính cho gia đình trong 20 năm với chi phí thấp. Loại bảo hiểm nào phù hợp nhất?
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.8s
+
+[45/51] synth_underwriting_decision_en    (synthesis_en)
+    Q: An applicant has high blood pressure and is overweight. How would an underwriter likely classify this applicant's risk and what factors are considered?
+    PASS  path=loma  chunks=5  web=0  nodes=12  10.8s
+
+[46/51] fail_personal_advice_vi           (fail_personal_advice)
+    Q: Tôi 35 tuổi đã có gia đình và 2 con, nên mua loại bảo hiểm cụ thể nào tốt nhất?
+    PASS  path=loma  chunks=5  web=0  nodes=12  25.0s
+
+[47/51] fail_too_specific_recent          (fail_off_corpus)
+    Q: What are the latest 2024 NAIC regulatory changes for US life insurance carriers?
+    PASS  path=web  chunks=5  web=5  nodes=12  35.2s
+
+[48/51] fail_unrelated_vi                 (fail_unrelated)
+    Q: Cách nấu phở bò ngon nhất là gì?
+    PASS  path=web  chunks=5  web=5  nodes=12  71.2s
+
+[49/51] fail_pure_paraphrase_vi           (fail_paraphrase)
+    Q: Khả năng sống lâu hơn dự kiến và hết tài sản trước khi mất được gọi là gì?
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.4s
+
+[50/51] lang_french_concept               (language_other)
+    Q: Qu'est-ce que l'antisélection en assurance vie?
+    PASS  path=loma  chunks=5  web=0  nodes=12  10.3s
+
+[51/51] lang_japanese_concept             (language_other)
+    Q: 保険における逆選択（antiselection）とは何ですか？
+    PASS  path=loma  chunks=5  web=0  nodes=12  16.0s
+
+
+=== Summary ===
+  passed: 49/51  (96.1%)
+  total time: 667.3s
+
+By category:
+  comparison_en          3/3
+  comparison_vi          3/3
+  concept_en             4/4
+  concept_vi             6/6
+  doc_compare_vi         1/1
+  fail_off_corpus        1/1
+  fail_paraphrase        1/1
+  fail_personal_advice   1/1
+  fail_unrelated         1/1
+  kg_traversal_en        1/1
+  kg_traversal_vi        1/1
+  language_other         2/2
+  language_override      2/2
+  schedule_en            1/1
+  schedule_vi            2/3
+  structural_en          2/2
+  structural_vi          3/3
+  summary_en             1/1
+  summary_vi             1/1
+  syllabus_en            3/3
+  syllabus_vi            4/5
+  synthesis_en           1/1
+  synthesis_vi           1/1
+  web_fallback_en        1/1
+  web_fallback_vi        2/2
+
+wrote D:\t\LOMA\rag\out\qa_results_full_v6.jsonl

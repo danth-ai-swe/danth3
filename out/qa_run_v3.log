@@ -1,0 +1,90 @@
+running 17/17 test cases  |  hyde=True  rerank=True  graph=True  fallback=True
+
+[ 1/17] vi_def_antiselection              (concept_vi)
+    Q: Antiselection là gì? Tại sao underwriter cần quan tâm tới nó?
+[graph] loaded 343 nodes, 395 edges from D:\t\LOMA\rag\out
+    PASS  path=loma  chunks=5  web=0  nodes=12  11.1s
+
+[ 2/17] vi_def_longevity                  (concept_vi)
+    Q: Longevity risk có nghĩa là gì trong bảo hiểm?
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.5s
+
+[ 3/17] vi_def_reinsurance                (concept_vi)
+    Q: Reinsurance là gì và ai nhận rủi ro?
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.1s
+
+[ 4/17] en_def_surrender                  (concept_en)
+    Q: What is a surrender charge in a deferred annuity and when does it apply?
+    PASS  path=loma  chunks=5  web=0  nodes=12  5.8s
+
+[ 5/17] en_def_underwriting               (concept_en)
+    Q: Explain the role of underwriting in insurance.
+    PASS  path=loma  chunks=5  web=0  nodes=10  9.1s
+
+[ 6/17] lang_override_vi_to_en            (language_override)
+    Q: Antiselection là gì? Please answer in English only.
+    PASS  path=loma  chunks=5  web=0  nodes=12  10.9s
+
+[ 7/17] lang_override_en_to_vi            (language_override)
+    Q: What is reinsurance? Hãy trả lời bằng tiếng Việt.
+    PASS  path=loma  chunks=5  web=0  nodes=12  7.0s
+
+[ 8/17] cmp_term_vs_whole_en              (comparison_en)
+    Q: What is the difference between term life insurance and whole life insurance?
+    PASS  path=loma  chunks=5  web=0  nodes=12  10.9s
+
+[ 9/17] cmp_speculative_vs_pure_vi        (comparison_vi)
+    Q: So sánh speculative risk và pure risk. Loại nào có thể được bảo hiểm?
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.1s
+
+[10/17] cmp_risk_transfer_vs_pooling_vi   (comparison_vi)
+    Q: So sánh giữa Risk Transfer và Risk Pooling.
+    PASS  path=loma  chunks=5  web=0  nodes=12  8.1s
+
+[11/17] kg_contract_types_vi              (kg_traversal_vi)
+    Q: Theo luật hợp đồng, một insurance contract có thể được phân loại thành các kiểu hợp đồng nào (ví dụ aleatory, unilateral, contract of adhesion…)? Liệt kê và mô tả ngắn gọn từng loại.
+    PASS  path=loma  chunks=5  web=0  nodes=12  14.1s
+
+[12/17] summary_module1_281_vi            (summary_vi)
+    Q: Tóm tắt các nội dung chính của Module 1 trong LOMA 281 (Risk and Insurance).
+    PASS  path=web  chunks=5  web=5  nodes=12  23.8s
+
+[13/17] summary_annuity_overview_en       (summary_en)
+    Q: Give me an overview of the types of annuity products covered in this course.
+    PASS  path=loma  chunks=5  web=0  nodes=12  9.9s
+
+[14/17] doc_compare_281_vs_291_vi         (doc_compare_vi)
+    Q: LOMA 281 và LOMA 291 khác nhau ở điểm nào về phạm vi nội dung?
+    PASS  path=loma  chunks=5  web=0  nodes=12  11.4s
+
+[15/17] web_solvency_ii_vi                (web_fallback_vi)
+    Q: Solvency II framework yêu cầu gì về capital requirements cho insurer ở EU?
+    PASS  path=web  chunks=5  web=5  nodes=7  17.9s
+
+[16/17] web_insurtech_en                  (web_fallback_en)
+    Q: What are the latest insurtech innovation trends in 2024?
+    PASS  path=web  chunks=5  web=5  nodes=12  22.0s
+
+[17/17] web_unrelated_vi                  (web_fallback_vi)
+    Q: Bitcoin có phải là khoản đầu tư an toàn không?
+    PASS  path=web  chunks=5  web=5  nodes=12  15.5s
+
+
+=== Summary ===
+  passed: 17/17  (100.0%)
+  total time: 201.2s
+
+By category:
+  comparison_en          1/1
+  comparison_vi          2/2
+  concept_en             2/2
+  concept_vi             3/3
+  doc_compare_vi         1/1
+  kg_traversal_vi        1/1
+  language_override      2/2
+  summary_en             1/1
+  summary_vi             1/1
+  web_fallback_en        1/1
+  web_fallback_vi        2/2
+
+wrote D:\t\LOMA\rag\out\qa_results_v3.jsonl
