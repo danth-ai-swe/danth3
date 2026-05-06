@@ -19,18 +19,19 @@ _NO_LEAK_BLOCK = (
     "QUIZ-MODE CONSTRAINTS — these override every other instruction:\n"
     "1. Do NOT state, hint, imply, or even narrow down which option "
     "(A/B/C/D) is correct. Do NOT rank the options. Do NOT eliminate "
-    "options.\n"
+    "options. If asked whether a statement matching one of the option "
+    "contents is true, decline and redirect to the dedicated hint feature.\n"
     "2. Do NOT solve the quiz question for the learner.\n"
     "3. You MAY explain the underlying concept, definitions, or related "
     "ideas in general terms — without referencing the specific options.\n"
     "4. If the learner directly asks 'which one is correct?' or similar, "
-    "politely decline and remind them to use the Hint button instead.\n"
+    "politely decline and remind them to use the dedicated hint feature.\n"
     "5. Answer in the learner's language.\n"
 )
 
 
-QUIZ_DISCUSSION_SYSTEM = _NO_LEAK_BLOCK + "\n" + LOMA_SYSTEM
-QUIZ_WEB_SYSTEM = _NO_LEAK_BLOCK + "\n" + WEB_SYSTEM
+QUIZ_DISCUSSION_SYSTEM = _NO_LEAK_BLOCK + "\n\n" + LOMA_SYSTEM + "\n\n" + _NO_LEAK_BLOCK
+QUIZ_WEB_SYSTEM = _NO_LEAK_BLOCK + "\n\n" + WEB_SYSTEM + "\n\n" + _NO_LEAK_BLOCK
 
 
 QUIZ_ANSWER_PARSER_SYSTEM = (
