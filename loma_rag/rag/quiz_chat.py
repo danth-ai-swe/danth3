@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from loma_rag.config.settings import rag as rag_cfg
+from loma_rag.constant.tokens import INSUFFICIENT_TOKEN
 from loma_rag.constant.responses import (
     LANG_FULL_NAME,
     NO_RESULT_RESPONSE_MAP,
@@ -281,3 +282,234 @@ def run_quiz_chat(
         user_lang, search_text, top_k, web_k, res,
     )
     return res
+
+
+def stream_quiz_chat(
+    retriever: Retriever,
+    chat_client,
+    web_fallback: Optional[WebFallback],
+    question: str,
+    options,
+    query: str,
+    top_k: int = 7,
+    web_k: int = 5,
+):
+    """Generator yielding event dicts for SSE.
+
+    Event shapes:
+      {"type":"stage","stage":"analyze_query"}
+      {"type":"stage","stage":"intent_detected","intent":"<intent>"}
+      {"type":"delta","text":"..."}                  (only when intent=="question")
+      {"type":"done", ...full data dict...}
+    """
+    options_pairs = _options_pairs(options)
+
+    yield {"type": "stage", "stage": "analyze_query"}
+    user_lang, search_text = analyze_query(chat_client, query)
+    if user_lang not in SUPPORTED_LANGS:
+        yield {"type": "stage", "stage": "intent_detected",
+               "intent": "unsupported_language"}
+        yield _terminal_event(
+            intent="unsupported_language",
+            path="unsupported_language",
+            message=UNSUPPORTED_LANGUAGE_MSG,
+        )
+        return
+
+    intent, answer_letter = _detect_intent(
+        chat_client, question, options_pairs, query, user_lang,
+    )
+    if intent in ("finish", "hint"):
+        yield {"type": "stage", "stage": "intent_detected", "intent": intent}
+        yield _terminal_event(intent=intent, path=intent, message="")
+        return
+    if intent == "answer":
+        yield {"type": "stage", "stage": "intent_detected", "intent": "answer"}
+        yield _terminal_event(intent="answer", path="answer",
+                              answer=answer_letter, message="")
+        return
+
+    if not is_insurance_topic(chat_client, query):
+        yield {"type": "stage", "stage": "intent_detected", "intent": "off_topic"}
+        canned = _off_topic_response(user_lang)
+        yield {"type": "delta", "text": canned}
+        yield _terminal_event(intent="off_topic", path="off_topic", message=canned)
+        return
+
+    yield {"type": "stage", "stage": "intent_detected", "intent": "question"}
+
+    # Discussion path with streaming. Mirrors stream_query in pipeline.py
+    # but with QUIZ_DISCUSSION_SYSTEM and no quiz/topic gates.
+    yield {"type": "stage", "stage": "retrieving"}
+    retr = retriever.retrieve(query, top_k=top_k, user_lang=user_lang,
+                              search_text=search_text)
+    top_rerank = retr.chunks[0].rerank_score if retr.chunks else float("-inf")
+    top_rrf = retr.chunks[0].fused_score if retr.chunks else 0.0
+    early_exit = (
+        web_fallback is not None
+        and top_rerank < EARLY_EXIT_RERANK_THRESHOLD
+        and top_rrf < EARLY_EXIT_RRF_THRESHOLD
+    )
+    high_confidence = (
+        top_rerank >= HIGH_CONFIDENCE_RERANK_THRESHOLD
+        or top_rrf >= HIGH_CONFIDENCE_RRF_THRESHOLD
+    )
+    spec_future: "Future | None" = None
+    if web_fallback is not None and not early_exit and not high_confidence:
+        spec_future = BG_POOL.submit(_prep_web_docs, query, web_fallback,
+                                     chat_client, web_k)
+
+    answer_model = select_answer_model(query)
+    quiz_system = _inject_quiz_context(QUIZ_DISCUSSION_SYSTEM, question, options_pairs)
+    answer_full: list[str] = []
+    insufficient = False
+
+    if early_exit:
+        insufficient = True
+        yield {"type": "stage", "stage": "early_exit_to_web"}
+    else:
+        yield {"type": "stage", "stage": "answering_loma", "model": answer_model}
+        user_prompt = build_loma_user_prompt(retr, user_lang=user_lang)
+        stream = chat_client.chat.completions.create(
+            model=answer_model,
+            messages=[
+                {"role": "system", "content": quiz_system},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.2,
+            stream=True,
+        )
+        sniff_chars = rag_cfg.sniff_chars
+        buf: list[str] = []
+        decided = False
+        for ev in stream:
+            if not ev.choices:
+                continue
+            delta = ev.choices[0].delta.content or ""
+            if not delta:
+                continue
+            buf.append(delta)
+            text = "".join(buf)
+            if not decided:
+                if INSUFFICIENT_TOKEN in text:
+                    insufficient = True
+                    decided = True
+                    break
+                if len(text) >= sniff_chars or "\n" in text:
+                    decided = True
+                    yield {"type": "delta", "text": text}
+                    answer_full.append(text)
+            else:
+                yield {"type": "delta", "text": delta}
+                answer_full.append(delta)
+        if not decided:
+            text = "".join(buf)
+            if INSUFFICIENT_TOKEN in text:
+                insufficient = True
+            elif text:
+                yield {"type": "delta", "text": text}
+                answer_full.append(text)
+
+    if not insufficient:
+        if spec_future is not None:
+            spec_future.cancel()
+        loma_text = "".join(answer_full)
+        yield _terminal_event(
+            intent="question", path="loma", message=loma_text,
+            chunks=retr.chunks, related_nodes=retr.related_nodes,
+            direct_ids=set(getattr(retr, "direct_node_ids", []) or []),
+        )
+        return
+
+    if web_fallback is None:
+        yield _terminal_event(intent="question", path="refused", message="")
+        return
+
+    if spec_future is not None:
+        try:
+            en_query, web_docs = spec_future.result(timeout=60)
+        except Exception as e:  # noqa: BLE001
+            yield _terminal_event(
+                intent="question", path="no_result",
+                message=_no_result_response(user_lang),
+                error=f"{type(e).__name__}: {e}",
+            )
+            return
+    else:
+        en_query = translate_to_english_query(chat_client, query)
+        try:
+            web_docs = web_fallback.retrieve(en_query, top_k=web_k)
+        except Exception as e:  # noqa: BLE001
+            yield _terminal_event(
+                intent="question", path="no_result",
+                message=_no_result_response(user_lang),
+                error=f"{type(e).__name__}: {e}",
+            )
+            return
+
+    if not web_docs:
+        yield _terminal_event(
+            intent="question", path="no_result",
+            message=_no_result_response(user_lang),
+            en_search_query=en_query,
+        )
+        return
+
+    yield {"type": "stage", "stage": "answering_web", "model": answer_model}
+    quiz_web_system = _inject_quiz_context(QUIZ_WEB_SYSTEM, question, options_pairs)
+    web_user = build_web_user_prompt(query, web_docs, user_lang=user_lang)
+    web_stream = chat_client.chat.completions.create(
+        model=answer_model,
+        messages=[
+            {"role": "system", "content": quiz_web_system},
+            {"role": "user", "content": web_user},
+        ],
+        temperature=0.2,
+        stream=True,
+    )
+    web_full: list[str] = []
+    for ev in web_stream:
+        if not ev.choices:
+            continue
+        delta = ev.choices[0].delta.content or ""
+        if delta:
+            yield {"type": "delta", "text": delta}
+            web_full.append(delta)
+
+    yield _terminal_event(
+        intent="question", path="web", message="".join(web_full),
+        web_docs=list(web_docs), en_search_query=en_query,
+        web_search_used=True,
+    )
+
+
+def _terminal_event(
+    *,
+    intent: str,
+    path: str,
+    message: str = "",
+    answer: Optional[str] = None,
+    chunks=None,
+    related_nodes=None,
+    direct_ids: Optional[set] = None,
+    web_docs=None,
+    en_search_query: str = "",
+    web_search_used: bool = False,
+    error: str = "",
+) -> dict:
+    """Build the terminal {'type':'done', ...} event with the same shape
+    the route layer expects when serialising QuizChatData."""
+    return {
+        "type": "done",
+        "intent": intent,
+        "path": path,
+        "message": message,
+        "answer": answer,
+        "chunks": list(chunks or []),
+        "related_nodes": list(related_nodes or []),
+        "direct_ids": list(direct_ids or []),
+        "web_docs": list(web_docs or []),
+        "en_search_query": en_search_query,
+        "web_search_used": web_search_used,
+        "error": error,
+    }
