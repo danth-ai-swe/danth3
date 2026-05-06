@@ -1,0 +1,301 @@
+"""Unit tests for quiz-chat intent detection.
+
+Pure-function tests. Most tests need only stdlib; LLM-backed tests
+(parse_answer_llm) require a chat client and are marked with
+`requires_llm=True`. Run from project root:
+
+    .venv/Scripts/python.exe tests/test_quiz_chat_intent.py
+    .venv/Scripts/python.exe tests/test_quiz_chat_intent.py -v
+    .venv/Scripts/python.exe tests/test_quiz_chat_intent.py --no-llm
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+import time
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+HERE = Path(__file__).resolve().parent.parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+load_dotenv(HERE / ".env")
+# Note: LLM-backed cases (parse_answer_llm) are added in Task 8; the
+# `--no-llm` flag and dotenv import are wired up here in advance.
+
+from loma_rag.rag.quiz_intent import normalize_text  # noqa: E402
+from loma_rag.rag.quiz_intent import detect_end_session  # noqa: E402
+from loma_rag.rag.quiz_intent import detect_hint_request  # noqa: E402
+
+
+# --- normalize_text cases: (input, expected) ---
+NORMALIZE_CASES: list[tuple[str, str]] = [
+    ("  HINT!  ", "hint"),
+    ("Kết Thúc.", "ket thuc"),
+    ("Option (A).", "option a"),
+    ("nộp\tbài", "nop bai"),
+    ("", ""),
+    ("a   b", "a b"),
+    ("option(a)", "option(a"),
+    ("Kết thúc。", "ket thuc"),
+    ("Đố là quiz?", "do la quiz"),
+    ("  ...kết thúc...  ", "ket thuc"),
+    ("クイズ！", "クイズ"),
+]
+
+
+def run_normalize_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in NORMALIZE_CASES:
+        actual = normalize_text(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] normalize_text({raw!r}) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(NORMALIZE_CASES)
+
+
+# (input, expected_is_end_session)
+END_SESSION_CASES: list[tuple[str, bool]] = [
+    # positive
+    ("Kết thúc", True),
+    ("kết thúc phiên", True),
+    ("KENT THUC", True),                    # typo, fuzzy
+    ("end session", True),
+    ("End Quiz!", True),
+    ("submit and finish", True),
+    ("done", True),
+    ("quit", True),
+    ("exit", True),
+    ("stop", True),
+    ("nộp bài", True),
+    ("ngp bai", True),                       # typo per spec
+    ("thoát", True),
+    ("dừng lại đi", True),                   # contains "dung" token
+    ("I want to finish now", True),          # contains "finish" token
+    # negative
+    ("How do I end a contract?", False),
+    ("what does 'finish' mean here?", False),
+    ("Antiselection là gì?", False),
+    ("A", False),
+    ("hint", False),
+]
+
+
+def run_end_session_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in END_SESSION_CASES:
+        actual = detect_end_session(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] detect_end_session({raw!r}) -> {actual}  expected={expected}")
+    return n_pass, len(END_SESSION_CASES)
+
+
+HINT_CASES: list[tuple[str, bool]] = [
+    # positive
+    ("hint", True),
+    ("Hint!", True),
+    ("HINT", True),
+    ("hin", True),
+    ("give me a hint", True),
+    ("Can I have a hint?", True),
+    ("show me a hint please", True),
+    ("gợi ý", True),
+    ("gợi y", True),
+    ("goi y", True),
+    ("cho tôi gợi ý", True),
+    ("cho toi mot hint", True),
+    ("help", True),
+    ("help!", True),
+    # accepted v1 false-positives (token containment, no question-mark guard for hints)
+    ("what does 'hint' mean in poker?", True),
+    # negative
+    ("Antiselection là gì?", False),
+    ("A", False),
+    ("end session", False),
+]
+
+
+def run_hint_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in HINT_CASES:
+        actual = detect_hint_request(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] detect_hint_request({raw!r}) -> {actual}  expected={expected}")
+    return n_pass, len(HINT_CASES)
+
+
+from loma_rag.rag.quiz_intent import parse_answer_letter  # noqa: E402
+
+# (input, expected_letter_or_None)
+LETTER_CASES: list[tuple[str, str | None]] = [
+    # positive — single tokens
+    ("A", "A"),
+    ("a", "A"),
+    ("  B  ", "B"),
+    ("c", "C"),
+    ("d.", "D"),
+    ("(A)", "A"),
+    ("[B]", "B"),
+    ("1", "A"),
+    ("2", "B"),
+    ("3", "C"),
+    ("4", "D"),
+    # positive — phrasal
+    ("Option A", "A"),
+    ("option b", "B"),
+    ("đáp án C", "C"),
+    ("dap an d", "D"),
+    ("answer A", "A"),
+    ("Câu 2", "B"),
+    # negative
+    ("E", None),
+    ("5", None),
+    ("A B", None),                        # ambiguous
+    ("A is the answer", None),            # multi-token, not pure pick
+    ("hint", None),
+    ("", None),
+    ("Antiselection là gì?", None),
+]
+
+
+def run_letter_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for raw, expected in LETTER_CASES:
+        actual = parse_answer_letter(raw)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] parse_answer_letter({raw!r}) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(LETTER_CASES)
+
+
+from loma_rag.rag.quiz_intent import parse_answer_fuzzy  # noqa: E402
+
+OPTS_EN = [
+    ("A", "Antiselection"),
+    ("B", "Underwriting risk"),
+    ("C", "Reinsurance"),
+    ("D", "Risk pooling"),
+]
+OPTS_VI = [
+    ("A", "Tái bảo hiểm"),
+    ("B", "Bảo hiểm nhân thọ"),
+    ("C", "Bảo hiểm nhóm"),
+    ("D", "Bảo hiểm tài sản"),
+]
+
+# (query, options, expected_letter_or_None)
+FUZZY_CASES: list[tuple[str, list[tuple[str, str]], str | None]] = [
+    # clear matches
+    ("antiselection", OPTS_EN, "A"),
+    ("Reinsurance", OPTS_EN, "C"),
+    ("risk pool", OPTS_EN, "D"),
+    ("Tái bảo hiểm", OPTS_VI, "A"),
+    ("Bao hiem nhom", OPTS_VI, "C"),                  # diacritic-folded
+    # ambiguous — too close between two options
+    ("Bảo hiểm", OPTS_VI, None),
+    # nothing close
+    ("hello world", OPTS_EN, None),
+    ("", OPTS_EN, None),
+]
+
+
+def run_fuzzy_tests(verbose: bool) -> tuple[int, int]:
+    n_pass = 0
+    for query, options, expected in FUZZY_CASES:
+        actual = parse_answer_fuzzy(query, options)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] parse_answer_fuzzy({query!r}, ...) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(FUZZY_CASES)
+
+
+from loma_rag.llm.openai_client import make_chat_client  # noqa: E402
+from loma_rag.rag.quiz_intent import parse_answer_llm     # noqa: E402
+
+# (query, options, expected) — paraphrase / partial cases
+LLM_CASES: list[tuple[str, list[tuple[str, str]], str | None]] = [
+    ("the one about adverse selection", OPTS_EN, "A"),
+    ("transferring risk to another insurer", OPTS_EN, "C"),
+    ("a pool of similar risks shared together", OPTS_EN, "D"),
+    ("group coverage for employees", OPTS_VI, "C"),  # cross-language: model can still map
+    ("I don't know, what is this about?", OPTS_EN, None),
+    ("hint please", OPTS_EN, None),
+]
+
+
+def run_llm_tests(verbose: bool, client) -> tuple[int, int]:
+    if client is None:
+        print("parse_answer_llm: SKIPPED (--no-llm)")
+        return 0, 0
+    n_pass = 0
+    for query, options, expected in LLM_CASES:
+        actual = parse_answer_llm(client, "What is the question?", query, options)
+        ok = actual == expected
+        n_pass += int(ok)
+        if verbose or not ok:
+            mark = "PASS" if ok else "FAIL"
+            print(f"  [{mark}] parse_answer_llm({query!r}, ...) -> {actual!r}  expected={expected!r}")
+    return n_pass, len(LLM_CASES)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--no-llm", action="store_true",
+                    help="skip LLM-backed cases")
+    args = ap.parse_args()
+
+    t0 = time.time()
+    total_pass = 0
+    total_count = 0
+
+    p, n = run_normalize_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"normalize_text: {p}/{n}")
+
+    p, n = run_end_session_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"detect_end_session: {p}/{n}")
+
+    p, n = run_hint_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"detect_hint_request: {p}/{n}")
+
+    p, n = run_letter_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"parse_answer_letter: {p}/{n}")
+
+    p, n = run_fuzzy_tests(args.verbose)
+    total_pass += p; total_count += n
+    print(f"parse_answer_fuzzy: {p}/{n}")
+
+    client = None if args.no_llm else make_chat_client()
+    p, n = run_llm_tests(args.verbose, client)
+    if n:
+        total_pass += p; total_count += n
+        print(f"parse_answer_llm: {p}/{n}")
+
+    elapsed = time.time() - t0
+    print(f"\n=== {total_pass}/{total_count} passed in {elapsed:.1f}s ===")
+    return 0 if total_pass == total_count else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
